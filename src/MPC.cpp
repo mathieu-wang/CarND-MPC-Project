@@ -290,7 +290,26 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   return result;
 }
 
-// VectorXd<double> MPC::get_predicted_state(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
-//   Eigen::VectorXd state(6);
-  
-// }
+void MPC::get_predicted_state(Eigen::VectorXd& state, Eigen::VectorXd coeffs, int latency_ms) {
+  int steps = int((double)latency_ms/(dt*1000));
+  cout <<"steps: "<<steps;
+  for (int i = 0; i < steps; i++) {
+      double x0 = state[0];
+      double y0 = state[1];
+      double psi0 = state[2];
+      double v0 = state[3];
+      double cte0 = state[4];
+      double epsi0 = state[5];
+      double delta0 = state[6];
+      double a0 = state[7];
+      double f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+      double psides0 = atan(3*coeffs[3] * x0 * x0 + 2*coeffs[2] * x0 + coeffs[1]);
+
+      state[0] = x0 + v0 * cos(psi0) * dt;
+      state[1] = y0 + v0 * sin(psi0) * dt;
+      state[2] = psi0 + v0 * delta0 / Lf * dt;
+      state[3] = v0 + a0 * dt;
+      state[4] = (f0 - y0) + (v0 * sin(epsi0) * dt);
+      state[5] = (psi0 - psides0) + v0 * delta0 / Lf * dt;
+  }
+}

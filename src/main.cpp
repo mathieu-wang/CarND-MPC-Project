@@ -128,10 +128,10 @@ int main() {
           double throttle_value = j[1]["throttle"];
           //TODO: use to adjust for delay
 
-          Eigen::VectorXd current_state(6);
-          current_state << 0, 0, 0, v, cte, epsi;
+          Eigen::VectorXd state(8);
+          state << 0, 0, 0, v, cte, epsi, -steer_value, throttle_value;
 
-          Eigen::VectorXd state = current_state; //mpc.get_predicted_state(current_state, latency_ms);
+          mpc.get_predicted_state(state, coeffs, latency_ms);
 
           auto vars = mpc.Solve(state, coeffs);
 
