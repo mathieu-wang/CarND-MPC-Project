@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 5;
-double dt = 0.2;
+size_t N = 10;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -46,24 +46,52 @@ class FG_eval {
     // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
-    cout << "Entering eval function" << endl;
+    // cout << "Entering eval function" << endl;
 
     fg[0] = 0;
 
+    int Kcte = 2000;
+    int Kepsi = 2000;
+    int Kv = 1;
+    int Kdelta = 5;
+    int Ka = 5;
+    int Kdelta2 = 200;
+    int Ka2 = 10;
+
     for (int i = 0; i < N; i++) {
-      fg[0] += 1000 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
-      fg[0] += 4000 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
-      fg[0] += 0.1 * CppAD::pow(vars[v_start + i] - ref_v, 2);
+      AD<double> cte_se = CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+      AD<double> epsi_se = CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+      AD<double> v_se = CppAD::pow(vars[v_start + i] - ref_v, 2);
+      fg[0] += Kcte * cte_se;
+      fg[0] += Kepsi * epsi_se;
+      fg[0] += Kv * v_se;
+      // cout << "cte_se: " << cte_se 
+      //       << " epsi_se: " << epsi_se
+      //       << " v_se: " << v_se
+      //       << " fg[0]: " << fg[0]
+      //       << endl; 
     }
 
     for (int i = 0; i < N - 1; i++) {
-      fg[0] += 5 * CppAD::pow(vars[delta_start + i], 2);
-      fg[0] += 5 * CppAD::pow(vars[a_start + i], 2);
+      AD<double> delta_se = CppAD::pow(vars[delta_start + i], 2);;
+      AD<double> a_se = CppAD::pow(vars[a_start + i], 2);
+      fg[0] += Kdelta * delta_se;
+      fg[0] += Ka * a_se;
+      // cout  << " delta_se: " << delta_se
+      //       << " a_se: " << a_se
+      //       << " fg[0]: " << fg[0]
+      //       << endl; 
     }
    
     for (int i = 0; i < N - 2; i++) {
-      fg[0] += 200 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-      fg[0] += 10 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      AD<double> delta2_se = CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      AD<double> a2_se = CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      fg[0] += Kdelta2 * delta2_se;
+      fg[0] += Ka2 * a2_se;
+      // cout << " delta2_se: " << delta2_se
+      //       << " a2_se: " << a2_se
+      //       << " fg[0]: " << fg[0]
+      //       << endl; 
     }
 
     fg[1 + x_start] = vars[x_start];
@@ -109,7 +137,7 @@ class FG_eval {
       // epsi[t] = psi[t] - psides[t-1] + v[t-1] * delta[t-1] / Lf * dt
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + psi_start + t] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
+      fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
       fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
       fg[1 + cte_start + t] =
           cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
@@ -117,7 +145,7 @@ class FG_eval {
           epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
     }
 
-    cout << "Exiting eval function" << endl;
+    // cout << "Exiting eval function" << endl;
   }
 };
 
@@ -128,7 +156,7 @@ MPC::MPC() {}
 MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
-  cout << "Entering Solve" << endl;
+  // cout << "Entering Solve" << endl;
 
   bool ok = true;
   size_t i;
@@ -144,8 +172,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   double v = state[3];
   double cte = state[4];
   double epsi = state[5];
-  //double steer = state[6];
-  //double throttle = state[7];
 
   // 4 * 10 + 2 * 9
   size_t n_vars = N * 6 + (N - 1) * 2;
@@ -159,18 +185,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars[i] = 0;
   }
 
-  // vars[x_start] = x;
-  // vars[y_start] = y;
-  // vars[psi_start] = psi;
-  // vars[v_start] = v;
-  // vars[cte_start] = cte;
-  // vars[epsi_start] = epsi;
-  // vars[delta_start] = steer;
-  // vars[a_start] = throttle;
+  vars[x_start] = x;
+  vars[y_start] = y;
+  vars[psi_start] = psi;
+  vars[v_start] = v;
+  vars[cte_start] = cte;
+  vars[epsi_start] = epsi;
 
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
-  // TODO: Set lower and upper limits for variables.
 
   for (int i = 0; i < delta_start; i++) {
     vars_lowerbound[i] = -1.0e19;
@@ -238,6 +261,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
       options, vars, vars_lowerbound, vars_upperbound, constraints_lowerbound,
       constraints_upperbound, fg_eval, solution);
 
+  cout<<"vars: "<<vars<<endl;
+
   // Check some of the solution values
   ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
@@ -260,7 +285,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     result.push_back(solution.x[y_start + i + 1]);
   }
 
-  cout << "Exiting Solve" << endl;
+  // cout << "Exiting Solve" << endl;
 
   return result;
 }
+
+// VectorXd<double> MPC::get_predicted_state(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
+//   Eigen::VectorXd state(6);
+  
+// }
