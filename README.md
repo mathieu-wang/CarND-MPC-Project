@@ -50,10 +50,38 @@ Self-Driving Car Engineer Nanodegree Program
 3. Compile: `cmake .. && make`
 4. Run it: `./mpc`.
 
-## Model[updateEquations]
+## Model
 
-[updateEquations]: ./UpdateEquations "Update Equations"
-!
+The car is represented by the Bicycle Motion Model, which simplifies the state and actuation equations without sacrificing the accuracy of the model.
+
+Using 2D trigonometry, one can easily get the following state update equations where x and y denote the position of the vehicle in the global coordinate system, psi is the heading of the vehicle, v is the velocity along the current heading, delta_t is the steering angle, Lf is the distance between the center of mass of the vehicle and its front steering wheel, and a is its acceleration.
+
+[updateEquations]: ./UpdateEquations.PNG "Update Equations"
+![updateEquations][updateEquations]
+
+The actuation is controlled by two parameters, delta, which represents the steering angle from the steering wheel, and a, which represents the acceleration resulting from the throttle and brake pedals.
+
+The trajectory is fitted by a third degree polynomial, which can model most of the roads on which the car would run.
+
 ## Parameter Tuning
+There are several parameters that contribute to a stable and effective MPC controller.
+Two of these are related to the length and frequency of the prediction:
+1. N - number of steps to predict
+2. dt - the interval between each prediction and actuation step
+From these values, we get T = N x dt, which is the number of seconds in the future until which the model calculates and predicts the state. a large dt value may make the calculations inaccurate, while a small dt might not be long enough to finish all the calculations required for prediction and actuation at each step. A large T means we try to predict a long time into the future, which becomes more inaccurate with increasing values of T.
+For a reference speed of 100 MPH = 44.7 m/s, values of N = 10 and dt = 0.1 were found to strike a good balance between the tradeoffs described above. This produced a T = 1 s, which maps the waypoints to a reasonable 45 meters ahead of the vehicle. 
+In fact with larger T values (e.g. N = 20, dt = 0.1), the added waypoints sometimes unnecessarily affect the actuation commands and turn out to be worse than if only closer waypoints were taken into account. When T is too small, the car sometimes does not react to sharp turns quickly enough and can go off track at higher speeds.
+
+Other parameters that affect the MPC are the gains of the various errors and actuation parameters in the cost function.
+1. Cross-Track Error - how far is the vehicle from the center of the lane
+2. Psi Error - how far off is the vehicle's heading from the ideal value
+3. Velocity Error - how far away is the vehicle's velocity to the desired value
+4- Steering Magnitude - how big is the steering value to be sent. Large values are penalized to avoid unstable back-and-forth steering 
+5- Acceleration Magnitude - how big is the throttle value to be sent. Large values are penalized to avoid constant changes in speed
+6- Steering Change - how much is the current steering value different from the last one sent. Large values are penalized to avoid sudden changes in steering values to have smooth turns.
+7- Acceleration Change - how much is the current throttle value different from the last one sent. Large values are penalized to avoid sudden changes acceleration to have smooth speed changes.
 
 ## Latency Handling
+In order to simulate the real-world latency between getting sensor data, calculating state info, and actuation commands taking effect, an artificial delay was added in the simulator.
+Even though the MPC worked while without the delay, once the delay was introduced, the controller started sending larger and larger steering values because the correction would not be made on time. This cannot be solved by simply tuning the parameters described above.
+In order to handle the latency, the initial state values at each steps are changed. Using the current state values and the same state prediction equations, the predicted state after the latency can be approximated, and the controller can use those values to send more accurate actuation commands.
