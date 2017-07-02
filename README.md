@@ -56,8 +56,8 @@ The car is represented by the Bicycle Motion Model, which simplifies the state a
 
 Using 2D trigonometry, one can easily get the following state update equations where x and y denote the position of the vehicle in the global coordinate system, psi is the heading of the vehicle, v is the velocity along the current heading, delta_t is the steering angle, Lf is the distance between the center of mass of the vehicle and its front steering wheel, and a is its acceleration.
 
-[updateEquations]: ./UpdateEquations.PNG "Update Equations"
-![updateEquations][updateEquations]
+[stateEquations]: ./StateEquations.PNG "State Equations"
+![stateEquations][stateEquations]
 
 The actuation is controlled by two parameters, delta, which represents the steering angle from the steering wheel, and a, which represents the acceleration resulting from the throttle and brake pedals.
 
@@ -76,10 +76,10 @@ Other parameters that affect the MPC are the gains of the various errors and act
 1. Cross-Track Error - how far is the vehicle from the center of the lane
 2. Psi Error - how far off is the vehicle's heading from the ideal value
 3. Velocity Error - how far away is the vehicle's velocity to the desired value
-4- Steering Magnitude - how big is the steering value to be sent. Large values are penalized to avoid unstable back-and-forth steering 
-5- Acceleration Magnitude - how big is the throttle value to be sent. Large values are penalized to avoid constant changes in speed
-6- Steering Change - how much is the current steering value different from the last one sent. Large values are penalized to avoid sudden changes in steering values to have smooth turns.
-7- Acceleration Change - how much is the current throttle value different from the last one sent. Large values are penalized to avoid sudden changes acceleration to have smooth speed changes.
+4. Steering Magnitude - how big is the steering value to be sent. Large values are penalized to avoid unstable back-and-forth steering 
+5. Acceleration Magnitude - how big is the throttle value to be sent. Large values are penalized to avoid constant changes in speed
+6. Steering Change - how much is the current steering value different from the last one sent. Large values are penalized to avoid sudden changes in steering values to have smooth turns.
+7. Acceleration Change - how much is the current throttle value different from the last one sent. Large values are penalized to avoid sudden changes acceleration to have smooth speed changes.
 
 ## Latency Handling
 In order to simulate the real-world latency between getting sensor data, calculating state info, and actuation commands taking effect, an artificial delay was added in the simulator.
